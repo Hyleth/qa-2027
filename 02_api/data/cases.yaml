@@ -1,0 +1,95 @@
+# 用例数据：把"测什么"和"怎么测"分开
+#
+# 为什么用 YAML 而不是直接把数据写进 .py？
+#   1. 加一条用例不用碰代码，改一个 yaml 段落就行 —— W2 的"必做 3"就是这个
+#   2. 用例能被人 review。产品经理看不懂 pytest，但看得懂这张表
+#   3. 同一份脚本能跑多套数据（测试环境 / 预发环境），改 base_url 不改代码
+#
+# 每条用例必须写 expect，且 expect 里必须是"能判定的值"。
+# 写"返回正常"这种描述，机器判不了 —— 这就是 AI 生成用例最常见的毛病。
+
+login:
+  - id: LOGIN-01
+    title: 正确的用户名密码可以登录
+    request:
+      username: alice
+      password: "123456"
+    expect:
+      status: 200
+      code: 0
+
+  - id: LOGIN-02
+    title: 密码错误时拒绝登录
+    request:
+      username: alice
+      password: "wrong-password"
+    expect:
+      status: 401
+      code: 4010
+
+  - id: LOGIN-03
+    title: 用户名不存在时拒绝登录
+    request:
+      username: nobody
+      password: "123456"
+    expect:
+      status: 401
+      code: 4010
+
+  - id: LOGIN-04
+    title: 缺少密码字段时返回参数错误
+    request:
+      username: alice
+    expect:
+      status: 400
+      code: 4001
+
+  - id: LOGIN-05
+    title: 用户名为空字符串时返回参数错误
+    request:
+      username: ""
+      password: "123456"
+    expect:
+      status: 400
+      code: 4001
+
+refund:
+  - id: REF-01
+    title: 未退款订单可以按订单金额退款
+    request:
+      order_id: O1003
+      amount: "50.00"
+    expect:
+      status: 200
+      code: 0
+
+  - id: REF-02
+    title: 退款金额超过订单金额时拒绝
+    request:
+      order_id: O1005
+      amount: "200.00"
+    expect:
+      status: 400
+      code: 4002
+
+  - id: REF-03
+    title: 已退款订单不能重复退款
+    request:
+      order_id: O1004
+      amount: "10.00"
+    expect:
+      status: 400
+      code: 4009
+
+  - id: REF-04
+    title: 退款金额为负数时应当拒绝
+    # known_bug 表示"这条用例现在会红，因为服务端有已知缺陷"。
+    # 打上它之后这条会显示成 xfail（预期失败），不阻塞其他人。
+    # W3 的任务：把 mock_server.py 里的 BUG-01 修好，然后删掉这一行 —— 它会自动变绿。
+    known_bug: BUG-01
+    request:
+      order_id: O1001
+      amount: "-50.00"
+    expect:
+      status: 400
+      code: 4001

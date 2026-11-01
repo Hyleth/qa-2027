@@ -1,0 +1,13 @@
+# 依赖清单 —— W1 装完就不用再管了
+#
+# 只装这四个。看到教程里让你装 flask / django / pandas 的先别装，
+# 每多一个包，就多一个"环境问题"的可能。
+
+pytest>=9.0,<10
+requests>=2.31
+PyYAML>=6.0
+jsonschema>=4.20
+
+# Playwright 等到 W4 的选修那天再装（要下 150MB 浏览器，现在装是浪费）：
+#   pip install playwright
+#   python -m playwright install chromium

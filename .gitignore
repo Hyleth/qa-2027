@@ -1,0 +1,37 @@
+# 虚拟环境：里面有本机绝对路径，换电脑必须重建
+.venv/
+venv/
+env/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# 密钥：永远不要提交
+.env
+.env.*
+*.key
+secrets.*
+
+# 测试产物
+**/screenshots/
+**/videos/
+**/traces/
+**/.report/
+out/*.tmp
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 系统垃圾
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 工具目录
+.workbuddy/

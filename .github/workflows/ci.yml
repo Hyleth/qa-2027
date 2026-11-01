@@ -1,0 +1,114 @@
+# GitHub Actions · 接口自动化门禁
+#
+# 什么时候用：W4 · 11/24（周二）照着这份跑通，之后每次 push 自动执行。
+# 干什么用：  把"我记得测过了"变成"机器每次替你测一遍，红了就不许合"。
+#             面试时这是"工程化能力"最直接的证据 —— 一行绿色徽章胜过十句自述。
+#
+# 三要素（11/24 要能指着这份文件讲出来）：
+#   on     什么时候跑    → 下面第 3 段
+#   jobs   跑哪些任务    → 第 4 段，一个 job 就是一个独立的虚拟机
+#   steps  每个任务怎么做 → 第 5 段，从上往下依次执行，任何一步失败整个 job 就红
+#
+# 放哪：这个文件必须在【仓库根目录】的 .github/workflows/ 下。
+#      如果你的 git 仓库根就是 qa-2027/，路径就是 qa-2027/.github/workflows/ci.yml
+
+
+# ---------------------------------------------------------------- ① on
+# 什么时候触发。三种都留着，各有用途：
+on:
+  push:
+    branches: [main]        # 往 main 推代码就跑 —— 主分支永远是"最后一次验证过的状态"
+  pull_request:             # 提 PR 就跑 —— 合进去之前先知道会不会把 main 搞红
+  workflow_dispatch:        # 允许在网页 Actions 页面手点运行 —— 调试时不用为了触发而空提交
+
+
+# ---------------------------------------------------------------- ② jobs
+jobs:
+  api-tests:
+    name: 接口自动化（02_api）
+    runs-on: ubuntu-latest   # CI 跑在 Linux 上，你本地是 Windows。差异就在这儿第一次咬你
+    timeout-minutes: 10      # 卡住时自动放弃，避免占着队列 6 小时
+
+    # 这个 job 里所有 run 命令默认都在 02_api/ 下执行，
+    # 省得每一步都写 cd 02_api && ...
+    defaults:
+      run:
+        working-directory: 02_api
+
+    # ------------------------------------------------------------ ③ steps
+    steps:
+      # 1) 把仓库代码拉到这台虚拟机上。不写这步，机器上什么都没有
+      - name: 拉代码
+        uses: actions/checkout@v4
+
+      # 2) 装 Python。版本要和本地一致（本地是 3.13），否则可能出现
+      #    "本地绿、CI 红"这种最难查的问题
+      - name: 装 Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip                        # 缓存下载过的包，第二次跑快很多
+          cache-dependency-path: requirements.txt
+
+      # 3) 装依赖。注意 requirements.txt 在仓库根，不在 02_api/
+      #    （working-directory 只影响 run，不影响 cache-dependency-path 的解析位置）
+      - name: 装依赖
+        run: pip install -r ../requirements.txt
+
+      # 4) 跑测试。这一步就是门禁本体：
+      #    pytest 只要有 1 条 failed，退出码就不是 0，这一步直接红，job 失败，
+      #    PR 上会显示红叉，合不进去。不需要你再写任何 if 判断。
+      - name: 跑 pytest
+        run: pytest -q
+
+      # 5) 记录环境信息。失败时先看这一步，能省你半小时
+      - name: 打印环境信息（失败排查用）
+        if: always()          # 前面步骤失败了也照跑
+        run: |
+          python --version
+          pip list
+          pwd
+          ls
+
+# ---------------------------------------------------------------- 关于徽章
+# 第一次跑成功后，在 README.md 顶部加这一行（把 USER 换成你的 GitHub 用户名）：
+#
+# ![CI](https://github.com/USER/qa-return-2027/actions/workflows/ci.yml/badge.svg)
+#
+# 徽章图是 GitHub 实时画的：绿=最近一次成功，红=最近一次失败。
+# 它是"我真的在跑 CI"最省事的证明，也是 11/24 的合格线。
+
+
+# ---------------------------------------------------------------- 以后再加的
+# 下面这段是 W10（01/07）的任务：让 CI 同时跑 AI 评测的 mock 模式。
+# 现在别加，加了会多一个你不知道为什么红的东西。
+#
+# 用法：删掉每行开头的 #，粘到 jobs: 下面（和 api-tests 平级）
+#
+#  llm-eval-smoke:
+#    name: AI 评测冒烟（03_llm_eval）
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 10
+#    defaults:
+#      run:
+#        working-directory: 03_llm_eval
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: actions/setup-python@v5
+#        with:
+#          python-version: "3.13"
+#      - name: 跑评测（mock 模式，不需要 API Key）
+#        run: python runner.py --judge mock
+#
+# 为什么 CI 上只跑 mock 模式：
+#   接真模型要 API Key，Key 放到仓库 Secrets 里才能用（Settings → Secrets → Actions）。
+#   但真模型每次结果都不一样，做成门禁会天天红 —— 真实的做法是
+#   **提交时跑 mock 快速冒烟（快、稳定），每天定时跑一次真模型（慢、看趋势）**。
+
+
+# ---------------------------------------------------------------- 为什么 CI 不跑 UI
+# UI 自动化（Playwright）默认不在这份 CI 里跑。两个原因：
+#   1. GitHub 免费机器没装浏览器，要额外下 150MB，慢且经常挂
+#   2. UI 用例天生不稳（渲染延迟、动画、分辨率），做成门禁会天天红
+# 真实项目的做法：接口测试进来做门禁，UI 测试每天定时跑一次（nightly），红了人工看。
+# 这句话面试可以直接讲，是个能体现判断力的细节。

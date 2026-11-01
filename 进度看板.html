@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 测试岗回归进度看板</title>
+<style>
+  :root{
+    --ink:#1f2430; --muted:#6b7280; --line:#e5e7eb; --bg:#f6f7f9;
+    --accent:#2563eb; --green:#16a34a; --amber:#d97706; --red:#dc2626;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:28px 18px 70px;background:var(--bg);color:var(--ink);
+       font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;line-height:1.55}
+  .wrap{max-width:980px;margin:0 auto}
+  header{margin-bottom:22px}
+  h1{font-size:24px;margin:0 0 8px;letter-spacing:-.3px}
+  .lede{color:var(--muted);font-size:13.5px;margin:0}
+  .lede b{color:var(--ink)}
+  .stat{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 26px}
+  .stat div{background:#fff;border:1px solid var(--line);border-radius:10px;
+            padding:12px 18px;font-size:13px;color:var(--muted)}
+  .stat div b{display:block;font-size:24px;color:var(--ink);letter-spacing:-.5px}
+  .phase{margin-bottom:26px}
+  .phase h2{font-size:14px;font-weight:600;color:var(--muted);margin:0 0 10px;
+            text-transform:none;letter-spacing:.2px}
+  .week{background:#fff;border:1px solid var(--line);border-radius:12px;
+        padding:16px 18px;margin-bottom:10px;transition:.15s}
+  .week.now{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+  .week.done{opacity:.72}
+  .week.gate{border-left:3px solid var(--amber)}
+  .whead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+  .wtag{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+  .wdate{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums}
+  .wtitle{font-size:15px;font-weight:600}
+  .badge{font-size:11px;padding:2px 7px;border-radius:20px;font-weight:600}
+  .b-now{background:rgba(37,99,235,.1);color:var(--accent)}
+  .b-gate{background:rgba(217,119,6,.12);color:var(--amber)}
+  .tasks{list-style:none;margin:10px 0 6px;padding:0}
+  .tasks li{display:flex;gap:9px;align-items:flex-start;padding:5px 0;font-size:14px}
+  .tasks input{margin-top:3px;width:15px;height:15px;accent-color:var(--accent);flex:0 0 auto;cursor:pointer}
+  .tasks label{cursor:pointer;flex:1}
+  .tasks input:checked + label{text-decoration:line-through;color:#9ca3af}
+  .acc{font-size:12.5px;color:var(--muted);border-top:1px dashed var(--line);
+       padding-top:8px;margin-top:6px}
+  .acc b{color:var(--amber)}
+  footer{margin-top:34px;font-size:12.5px;color:var(--muted);text-align:center}
+  button{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;
+         padding:6px 14px;font-size:12.5px;cursor:pointer;font-family:inherit}
+  button:hover{border-color:#cbd5e1;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>AI 测试岗回归进度看板</h1>
+    <p class="lede">
+      2026-11-02 → 2027-02-21　目标：上海 15K+ / 南京 13K+ / 徐州 10K+<br>
+      每周只有 <b>3 个必做项</b>，全部勾完这周就算过关。勾选自动存在本机浏览器，刷新不丢。
+    </p>
+  </header>
+
+  <div class="stat">
+    <div><b id="s-done">0</b>已完成任务</div>
+    <div><b id="s-total">0</b>总任务数</div>
+    <div><b id="s-week">—</b>当前周次</div>
+    <div><b id="s-left">—</b>距 1/17 截止</div>
+  </div>
+
+  <div id="board"></div>
+
+  <footer>
+    计划全文见 <b>学习计划.md</b>　·　
+    <button id="reset">清空所有勾选</button>
+  </footer>
+</div>
+
+<script>
+const DATA = [
+  { phase: "P1 · 地基（W1–W4）产出：接口自动化项目", weeks: [
+    { w:"W1", from:"2026-11-02", to:"2026-11-08", date:"11/02–11/08", title:"Python 够用主义", tasks:[
+      "每日练习 D1–D6（01_python/每日练习.md），每天一个",
+      "D6 综合练习能跑出「用例总数 / 按模块 / 按优先级」三块结果",
+      "Git 六个命令不查文档：add / commit / push / status / diff / log"],
+      acc:"能不看资料写出「读文件 → 切分 → 统计 → 排序输出」" },
+    { w:"W2", from:"2026-11-09", to:"2026-11-15", date:"11/09–11/15", title:"pytest + HTTP 接口测试", tasks:[
+      "跑通 02_api，看到 17 passed + 2 xfailed",
+      "五个概念各写一句人话：assert / fixture / conftest / parametrize / xfail",
+      "只改 data/cases.yaml，加 3 条用例并跑通（不碰 .py）"],
+      acc:"能说清一条失败的用例是代码错、数据错，还是服务端真有问题" },
+    { w:"W3", from:"2026-11-16", to:"2026-11-22", date:"11/16–11/22", title:"接口项目实战", tasks:[
+      "读 mock_server.py（230 行），在纸上写出接口清单：路径 / 方法 / 入参 / 成功返回 / 失败码",
+      "定位并修掉 mock 里的 2 个 bug，pytest 变成 19 passed",
+      "填完 my_cases/ 骨架：3 个函数共 5 条，从 5 skipped 跑到 5 passed"],
+      acc:"能讲清 fixture 比全局变量好在哪（三条）" },
+    { w:"W4", from:"2026-11-23", to:"2026-11-29", date:"11/23–11/29", title:"CI + UI 入门 + 收口", gate:"Gate 1", tasks:[
+      "启用 .github/workflows/ci.yml：push 后 Actions 页面出现绿色运行",
+      "Playwright 三个半天：定位器 + expect 断言 + 写一个 LoginPage 类",
+      "写 README（架构图 + 怎么跑 + 用例统计）+ Gate 1 闭卷自测"],
+      acc:"<b>Gate 1</b>：从零建仓库 + 5 条接口用例 + CI 自动跑，全都能独立完成" }
+  ]},
+  { phase: "P2 · AI 应用测试（W5–W9）产出：AI 评测项目", weeks: [
+    { w:"W5", from:"2026-11-30", to:"2026-12-06", date:"11/30–12/06", title:"LLM 基础 + 真实 API", tasks:[
+      "申请 DeepSeek，用 requests 调通一次对话，打印 token 用量",
+      "跑通 03_llm_eval 的 mock 模式，看到 40 条评测报告",
+      "画出一张链路图：提问 → Prompt → 模型 → 输出（RAG 多一步检索）"],
+      acc:"能回答「80 页 PRD 塞不进模型怎么办」→ 分块 + 逐块 + 合并" },
+    { w:"W6", from:"2026-12-07", to:"2026-12-13", date:"12/07–12/13", title:"评测集 + 指标（最关键）", tasks:[
+      "读懂 40 条评测集，说出 6 个分类各自在测什么",
+      "自己加 10 条，每条必须写清「预期行为」",
+      "跑出报告，逐条核对每个指标是怎么算出来的"],
+      acc:"能解释「事实准确率 100% 但注入抵抗 0% 的产品为什么不能上线」" },
+    { w:"W7", from:"2026-12-14", to:"2026-12-20", date:"12/14–12/20", title:"LLM-as-Judge + 幻觉", tasks:[
+      "跑 runner.py --judge mock，看两个判定器 32.5% 一致率的分歧明细",
+      "把「不得泄露内部信息」写进裁判的评分标准，再跑一次看变化",
+      "同一问题问 5 次（temperature 调高），算出答案一致率"],
+      acc:"能说清 LLM-as-Judge 的三个偏差：长度偏好 / 位置偏差 / 自我偏好" },
+    { w:"W8", from:"2026-12-21", to:"2026-12-27", date:"12/21–12/27", title:"RAG 测试", tasks:[
+      "搞懂 RAG 三步：切块 / 向量检索 / 拼进 Prompt 生成",
+      "造 20 条小知识库，人为放「库里没有的问题」，看是拒答还是编造",
+      "算一次检索召回率（该召回的块，实际召回几个）"],
+      acc:"给一个错误回答，能在 3 分钟内定位到检索 / 知识 / 生成哪一环" },
+    { w:"W9", from:"2026-12-28", to:"2027-01-03", date:"12/28–01/03", title:"Agent 测试 + 安全", gate:"Gate 2", tasks:[
+      "写 10 条 Prompt Injection 攻击样本，跑一遍看中几条",
+      "用任意 Agent 跑一个多步任务，记录它每步调了什么、在哪跑偏",
+      "定义 Agent 三个指标：任务完成率 / 工具选择正确率 / 上下文保持率"],
+      acc:"<b>Gate 2</b>：给一个陌生的 AI 应用，2 小时能写出评测方案（评测集 + 指标 + 判定）" }
+  ]},
+  { phase: "P3 · 收口（W10–W11）产出：可演示 + 简历", weeks: [
+    { w:"W10", from:"2027-01-04", to:"2027-01-10", date:"01/04–01/10", title:"工程化 + 演示", gate:"Gate 3", tasks:[
+      "两个项目各写一份 README，带真实数据（条数 / 通过率 / 耗时）",
+      "接口项目用 Docker 跑起来，CI 里跑通（5 行 Dockerfile 就够）",
+      "录一个 5 分钟演示视频，说清「我在解决什么问题」"],
+      acc:"<b>Gate 3</b>：陌生人拿到仓库链接，10 分钟内能跑起来并看懂" },
+    { w:"W11", from:"2027-01-11", to:"2027-01-17", date:"01/11–01/17", title:"简历 + 讲述稿（硬截止）", gate:"截止线", tasks:[
+      "简历 v1：每条带数字，写不出数字的条目直接删",
+      "90 秒项目讲述稿，背到不看稿能说",
+      "试投 5 家「不那么想去」的公司，收集反馈"],
+      acc:"HR 问「介绍下你的项目」，90 秒说完，对方能复述出来" }
+  ]},
+  { phase: "P4 · 求职（W12–W16）产出：面试与 offer", weeks: [
+    { w:"W12", from:"2027-01-18", to:"2027-01-24", date:"01/18–01/24", title:"主投", tasks:[
+      "投 20 家，上海优先，南京并行",
+      "每份简历按 JD 调关键词顺序（AI 相关放最前）",
+      "建立投递台账：公司 / 岗位 / 投递日 / 状态"],
+      acc:"20 家投出去，至少 3 家有回应" },
+    { w:"W13", from:"2027-01-25", to:"2027-01-31", date:"01/25–01/31", title:"面试与复盘", tasks:[
+      "面试后 24 小时内写复盘（问了什么 / 砸在哪 / 补什么）",
+      "把「空窗一年」的标准答法练到脱口而出",
+      "整理高频题：AI 测试 8 题 + 接口自动化 5 题"],
+      acc:"至少 3 场面试，3 篇复盘" },
+    { w:"W14", from:"2027-02-01", to:"2027-02-07", date:"02/01–02/07", title:"春节降速（每天 40 分钟）", tasks:[
+      "只刷题，不学任何新知识",
+      "把 12 道高频题各准备 90 秒版本",
+      "春节不投递，招聘基本停摆"],
+      acc:"12 道题能脱口而出，不卡壳" },
+    { w:"W15", from:"2027-02-08", to:"2027-02-14", date:"02/08–02/14", title:"恢复与追加投递", tasks:[
+      "追加投 15 家（含徐州保底岗）",
+      "把 W13 复盘里的同一个问题反复练",
+      "联系 3 个同行 / 前同事走内推"],
+      acc:"内推渠道至少打通 2 个" },
+    { w:"W16", from:"2027-02-15", to:"2027-02-21", date:"02/15–02/21", title:"面试密集期", gate:"Gate 4", tasks:[
+      "面试 + 谈薪准备（目标区间 / 底线 / 怎么回应压价）",
+      "比较 offer，做决策清单（通勤 / 团队 / 成长 / 稳定）",
+      "只补面试暴露的洞，不学新东西"],
+      acc:"<b>Gate 4</b>：陌生人听完 90 秒能复述你做了什么、解决了什么问题" }
+  ]},
+  { phase: "延续 · 3 月主战场", weeks: [
+    { w:"3月", from:"2027-03-01", to:"2027-03-31", date:"整个 3 月", title:"金三银四", tasks:[
+      "持续投递，每周 15 家",
+      "把每一场面试的新问题补进题库",
+      "拿到第一个 offer 后仍然继续面，用于比价"],
+      acc:"3 月底前至少 2 个 offer 在手，才有谈价空间" }
+  ]}
+];
+
+const KEY = "qa-2027-board";
+let state = JSON.parse(localStorage.getItem(KEY) || "{}");
+
+function today() {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function parse(s) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function isNow(wk) {
+  const t = today();
+  return t >= parse(wk.from) && t <= parse(wk.to);
+}
+function isDone(wk) {
+  return wk.tasks.every((_, i) => state[wk.w + "-" + i]);
+}
+
+function render() {
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+  let total = 0, done = 0, current = "—";
+
+  DATA.forEach(p => {
+    const sec = document.createElement("section");
+    sec.className = "phase";
+    sec.innerHTML = `<h2>${p.phase}</h2>`;
+
+    p.weeks.forEach(wk => {
+      const now = isNow(wk);
+      if (now) current = wk.w;
+      const allDone = isDone(wk);
+
+      const box = document.createElement("div");
+      box.className = "week" + (now ? " now" : "") + (allDone ? " done" : "") + (wk.gate ? " gate" : "");
+      const badge = now ? '<span class="badge b-now">本周</span>' : "";
+      const gate = wk.gate ? `<span class="badge b-gate">${wk.gate}</span>` : "";
+
+      const items = wk.tasks.map((t, i) => {
+        const id = wk.w + "-" + i;
+        const checked = state[id] ? "checked" : "";
+        total++; if (state[id]) done++;
+        return `<li><input type="checkbox" id="${id}" data-key="${id}" ${checked}>
+                <label for="${id}">${t}</label></li>`;
+      }).join("");
+
+      box.innerHTML = `
+        <div class="whead">
+          <span class="wtag">${wk.w}</span>
+          <span class="wdate">${wk.date}</span>
+          <span class="wtitle">${wk.title}</span>
+          ${badge}${gate}
+        </div>
+        <ul class="tasks">${items}</ul>
+        <div class="acc">验收：${wk.acc}</div>`;
+
+      sec.appendChild(box);
+    });
+
+    board.appendChild(sec);
+  });
+
+  board.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.addEventListener("change", e => {
+      state[e.target.dataset.key] = e.target.checked;
+      localStorage.setItem(KEY, JSON.stringify(state));
+      render();
+    });
+  });
+
+  document.getElementById("s-done").textContent = done;
+  document.getElementById("s-total").textContent = total;
+  document.getElementById("s-week").textContent = current;
+
+  const deadline = parse("2027-01-17");
+  const days = Math.round((deadline - today()) / 86400000);
+  document.getElementById("s-left").textContent = days >= 0 ? days + " 天" : "已过";
+}
+
+document.getElementById("reset").addEventListener("click", () => {
+  if (confirm("确定清空所有勾选？此操作不可恢复。")) {
+    state = {};
+    localStorage.setItem(KEY, JSON.stringify(state));
+    render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
