@@ -34,7 +34,7 @@
 from pathlib import Path
 
 
-def get_case():
+def get_case(priority="P0"):
     data_file = Path(__file__).resolve().parent.parent /"数据" /"cases.md"  #resolve()获取绝对路径  parent获取上级
 
     read_file = data_file.read_text(encoding="utf-8")   #read_text(encoding= )必须携带参数，否则会报错
@@ -53,17 +53,19 @@ def get_case():
             "expected":cells[5]
         }
         list_case.append(dict_case)
-    return list_case
+    # return list_case
+    t = [c["title"] for c in list_case if c["priority"] == priority]
+    return list_case,t
 
+p = "P1"
+l,t = get_case(p)
 
-t = get_case()
+# s = [c["title"] for c in t if c["priority"] == "P0"]
 
-s = [c["title"] for c in t if c["priority"] == "P0"]
+print(f"测试用例共 {len(l)} 条")
+print(f"{p}级用例共 {len(t)} 条,分别是：")
 
-print(f"测试用例共 {len(t)} 条")
-print(f"P0级用例共 {len(s)} 条,分别是：")
-
-for i in s:
+for i in t:
     print(i)
 
 
