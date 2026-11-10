@@ -21,6 +21,9 @@ def load_cases():
     return get_case
 
 def by_count(key,case):
+    '''
+    统计某列内容出现的次数
+    '''
     return Counter(c[key] for c in case)
 
 if __name__ == "__main__":
@@ -32,6 +35,7 @@ if __name__ == "__main__":
     count_priority = by_count("priority",cases)
     print(f"按模块：{dict(count_module)}")
     print(f"按优先级：{dict(count_priority)}")
+
     l = []
     for c in cases:
         if len(c["expected"]) < 8:
@@ -42,21 +46,3 @@ if __name__ == "__main__":
     print("==================================")
     
 
-# from collections import Counter
-# items = [
-#     {"name": "张三", "age": 20,"sex":"man"},
-#     {"name": "李四", "age": 20,"sex":"man"},
-#     {"name": "张三","sex":"woman"}
-# ]
-# #统计张三出现的次数
-# n = []
-# for i in items:
-#     n.append(i["name"])
-# print(n)
-# n_sum = {}
-# for s in n:
-#     n_sum[s] = n_sum.get(s,0) +1
-# print(n_sum)
-# #另一种写法
-# c = Counter([i["name"] for i in items])
-# print(dict(c))
