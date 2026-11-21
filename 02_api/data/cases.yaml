@@ -53,6 +53,15 @@ login:
       status: 400
       code: 4001
 
+  - id: LOGIN-06
+    title: 用户名存在但密码为空字符串
+    request:
+      username: "alice"
+      password: ""
+    expect:
+      status: 400
+      code: 4001
+
 refund:
   - id: REF-01
     title: 未退款订单可以按订单金额退款
@@ -86,10 +95,28 @@ refund:
     # known_bug 表示"这条用例现在会红，因为服务端有已知缺陷"。
     # 打上它之后这条会显示成 xfail（预期失败），不阻塞其他人。
     # W3 的任务：把 mock_server.py 里的 BUG-01 修好，然后删掉这一行 —— 它会自动变绿。
-    known_bug: BUG-01
+    # known_bug: BUG-01     #bug被修好了，注释掉known_bug
     request:
       order_id: O1001
       amount: "-50.00"
+    expect:
+      status: 400
+      code: 4001
+
+  - id: REF-05
+    title: 退款金额为0时应拒绝
+    request:
+      order_id: O1001
+      amount: "0.00"
+    expect:
+      status: 400
+      code: 4001
+
+  - id: REF-06
+    title: 退款金额为非数字时应拒绝
+    request:
+      order_id: O1001
+      amount: "abc"
     expect:
       status: 400
       code: 4001

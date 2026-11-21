@@ -47,11 +47,11 @@ def test_query_nonexistent_order_returns_404(alice):
     assert resp.status_code == 404, alice.pretty(resp)
     assert resp.json()["code"] == 4040
 
-
-@pytest.mark.xfail(
-    reason="BUG-02：查订单没校验归属，alice 能查到 bob 的订单（越权）",
-    strict=True,  # strict=True：等 bug 修好后这条会变成 XPASS（失败），提醒你摘掉标记
-)
+#   2026-11-21 注掉xfial装饰器
+# @pytest.mark.xfail(
+#     reason="BUG-02：查订单没校验归属，alice 能查到 bob 的订单（越权）",
+#     strict=True,  # strict=True：等 bug 修好后这条会变成 XPASS（失败），提醒你摘掉标记
+# )
 def test_query_other_users_order_is_rejected(alice):
     """越权：alice 用自己的 token 查 bob 的订单（O1002 属于 user_id=2），必须 403。"""
     resp = alice.get("/api/orders/O1002")

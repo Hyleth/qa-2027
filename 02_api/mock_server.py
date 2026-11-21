@@ -131,6 +131,11 @@ class Handler(BaseHTTPRequestHandler):
 
             # ⚠️ BUG-02：这里本该判断 order["user_id"] == user_id，
             #    现在直接返回了，导致任何登录用户都能查别人的订单（越权）。
+            #    2026-11-21 在下面加了3行越权查看订单的校验
+            if order["user_id"] != user_id:
+                self._fail(403, 4030, "无权查看他人的订单")
+                return
+
             self._ok(order)
             return
 
@@ -184,6 +189,11 @@ class Handler(BaseHTTPRequestHandler):
 
             # ⚠️ BUG-01：这里本该先判断 amount_dec <= 0 就拒绝。
             #    现在负数一路走到底，等于"退款 -50 元"，账就反了。
+            #   2026-11-21 加上了下面这三行代码
+            if amount_dec <= 0:
+                self._fail(400, 4001, "退款金额必须大于 0")
+                return
+
             if amount_dec > Decimal(order["amount"]):
                 self._fail(400, 4002, f"退款金额不能超过订单金额 {order['amount']}")
                 return
