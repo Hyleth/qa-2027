@@ -26,7 +26,10 @@ def test_my_1_query_own_order(alice):
 
     参照：tests/test_orders.py 第 14-26 行（test_query_own_order_success）
     """
-    pytest.skip("TODO 第 1 条：删掉这一行，按下面的四步写")
+    
+
+    # 2026-11-22 注掉skip，并按注释新增代码
+    # pytest.skip("TODO 第 1 条：删掉这一行，按下面的四步写")
 
     # ① 发请求
     #    alice 是 conftest.py 里已经登录好的客户端，不用你自己登录、不用拼 URL。
@@ -48,6 +51,16 @@ def test_my_1_query_own_order(alice):
     #    order_id  == "O1001"
     #    user_id   == 1
     #    amount    == "199.00"   ← 注意是字符串，不是浮点 199.0
+
+    resp = alice.get("/api/orders/O1001")
+    assert resp.status_code == 200 , alice.pretty(resp)
+
+    assert resp.json()["code"] == 0
+
+    data = resp.json()["data"]
+    assert data["order_id"] == "O1001"
+    assert data["user_id"] == 1
+    assert data["amount"] == "199.00"
 
 
 # ---------------------------------------------------------------------------
