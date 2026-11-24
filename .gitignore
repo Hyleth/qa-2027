@@ -16,6 +16,9 @@ __pycache__/
 *.key
 secrets.*
 
+# 数据库文件（SQLite 练习生成的，二进制且每次跑都变，不进 git）
+*.db
+
 # 测试产物
 **/screenshots/
 **/videos/
